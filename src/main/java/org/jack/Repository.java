@@ -16,32 +16,21 @@ import java.util.Properties;
 public class Repository {
 
     private MysqlDataSource dataSource;
-    private Properties props;
     private Connection connection;
+    private String sanitisedTableName;
 
     public Repository(Properties props) throws IOException, SQLException {
 
-        this.props = props;
-
-        init();
+        init( props );
     }
 
 
 
-    public ResultSet getResultSet() throws SQLException {
+    public ResultSet getResultSet(int offset, int pageSize) throws SQLException {
 
-        connection = dataSource.getConnection();
-        connection.setReadOnly( true );
+        String sql = "select * from " + sanitisedTableName + " limit " + offset + ", " + pageSize;
 
-        String tableName = props.getProperty( "tablename" );
-
-        log.info("Using table name {}", tableName);
-
-        String sanitisedTableName = whitelist(tableName);
-
-        log.info("Sanitised table name {}", sanitisedTableName);
-
-        PreparedStatement preparedStatement = connection.prepareStatement("select * from " + sanitisedTableName);
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
 
         ResultSet rs = preparedStatement.executeQuery();
 
@@ -53,7 +42,7 @@ public class Repository {
     }
 
 
-    private void init() throws IOException, SQLException {
+    private void init(Properties props) throws IOException, SQLException {
 
         dataSource = new MysqlDataSource();
 
@@ -62,6 +51,18 @@ public class Repository {
         dataSource.setPassword(props.getProperty("password"));
 
         dataSource.setReadOnlyPropagatesToServer(true);
+
+        connection = dataSource.getConnection();
+
+        connection.setReadOnly( true );
+
+        String tableName = props.getProperty( "tablename" );
+
+        log.info("Using table name {}", tableName);
+
+        sanitisedTableName = whitelist(tableName);
+
+        log.info("Sanitised table name {}", sanitisedTableName);
     }
 
     public void close() throws SQLException {

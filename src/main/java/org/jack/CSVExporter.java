@@ -14,21 +14,31 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 @Slf4j
-public class CSVExporter {
+public class CSVExporter implements AutoCloseable {
 
     private Repository repository;
 
     private Properties props;
 
+    private BufferedWriter writer;
+
+    private CSVPrinter csvPrinter;
+
     public CSVExporter() throws IOException, SQLException {
 
-        log.info("Booting com.example.CSVExporter, loading property file and db repository.....");
+        log.info("**** Booting com.example.CSVExporter, loading property file and db repository.....");
 
         loadProperties();
 
         repository = new Repository( props );
 
-        log.info("...success!!");
+        String filepath = props.getProperty("filepath");
+
+        log.info("Opening file {} for writing.....", filepath);
+
+        writer = Files.newBufferedWriter(Paths.get( filepath ));
+
+        log.info("**** CSVExporter successfully booted!!");
     }
 
     private void loadProperties() throws IOException {
@@ -39,30 +49,48 @@ public class CSVExporter {
 
     public void exportCSV() throws IOException, SQLException {
 
-      ResultSet rs = repository.getResultSet();
+        int offset = 0;
 
-      print( rs );
+        int pageSize = 10;
 
-      rs.close();
+        ResultSet rs = null;
+
+        while(true) {
+            rs = repository.getResultSet(offset, pageSize);
+
+            if (offset != 0 && offset % 1000 == 0) {
+                log.debug("No of rows processed {}", offset);
+            }
+
+            if (rs.isBeforeFirst()) {
+                print(rs);
+            } else break;
+
+            offset += pageSize;
+        }
+
+        rs.close();
+        log.info("Finished writing csv");
     }
 
 
     private void print(ResultSet rs) throws IOException, SQLException {
 
-        String filepath = props.getProperty("filepath");
-        BufferedWriter writer = Files.newBufferedWriter(Paths.get( filepath ));
-
-        log.info("Writing csv to file {}", filepath);
-
-        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader( rs ));
+        if(csvPrinter == null) {
+            log.info("Building CSVPrinter with headers");
+            csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(rs));
+        }
 
         csvPrinter.printRecords( rs );
-
-        csvPrinter.close( true );
-
-        log.info("Finished writing csv");
-
     }
 
 
+    @Override
+    public void close() throws Exception {
+        csvPrinter.close( true );
+
+        writer.close();
+
+        repository.close();
+    }
 }
