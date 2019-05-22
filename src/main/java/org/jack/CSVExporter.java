@@ -7,6 +7,7 @@ import org.apache.commons.csv.CSVPrinter;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
@@ -43,8 +44,10 @@ public class CSVExporter implements AutoCloseable {
 
     private void loadProperties() throws IOException {
         props = new Properties();
-        FileInputStream fis = new FileInputStream("/home/git/datasetextractor/src/main/resources/db.properties");
-        props.load( fis );
+
+        InputStream inputStream = getClass().getResourceAsStream("/db.properties");
+
+        props.load( inputStream );
     }
 
     public void exportCSV() throws IOException, SQLException {
