@@ -3,16 +3,14 @@ package org.jack;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Main {
+public class Extractor {
 
     public static void main(String... args) {
 
 
-        try {
+        try (  CSVExporter csvExporter = new CSVExporter() ) {
 
             log.info("Starting csv exporter...");
-
-            CSVExporter csvExporter = new CSVExporter();
 
             csvExporter.exportCSV();
 
