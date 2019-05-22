@@ -1,0 +1,15 @@
+.sts4-cache/
+/target
+.classpath
+.project
+.settings/
+datasetextractor.iml
+.idea
+src/main/resources/db.properties
+
+bin/
+password
+
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
