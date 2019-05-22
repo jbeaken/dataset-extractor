@@ -79,6 +79,7 @@
                 </executions>
                 <configuration>
                     <mainClass>org.jack.Extractor</mainClass>
+                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
                 </configuration>
             </plugin>
 
