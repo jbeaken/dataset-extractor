@@ -6,6 +6,8 @@
 datasetextractor.iml
 .idea
 src/main/resources/db.properties
+src/main/resources/data.extractor.properties
+src/main/etc/*
 
 bin/
 password

@@ -2,39 +2,84 @@ package org.jack;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 @Slf4j
 public class Repository {
 
     private MysqlDataSource dataSource;
+    
     private Connection connection;
-    private String sanitisedTableName;
+    
+    private String tableName;
 
-    public Repository(Properties props) throws IOException, SQLException {
+    private String[] headers;
+    private int columnCount;
+    private String sql;
 
-        init( props );
+    public Repository(Properties properties) throws SQLException {
+        init( properties );
+
+        initTableHeaders();
     }
 
 
+    public String[] getHeaders() throws SQLException {
+        return headers;
+    }
 
-    public ResultSet getResultSet(int offset, int pageSize) throws SQLException {
+    private void initTableHeaders() throws SQLException {
 
-        String sql = "select * from " + sanitisedTableName + " limit " + offset + ", " + pageSize;
+        String preparedSql = sql + " limit 1";
 
-        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        PreparedStatement preparedStatement = connection.prepareStatement( preparedSql );
 
         ResultSet rs = preparedStatement.executeQuery();
 
-        return rs;
+        ResultSetMetaData metaData = rs.getMetaData();
+
+        columnCount = metaData.getColumnCount();
+
+        String[] labels = null;
+        if (metaData != null) {
+            labels = new String[columnCount];
+            for (int i = 0; i < columnCount; i++) {
+                labels[i] = metaData.getColumnLabel(i + 1);
+            }
+        }
+        
+        headers = labels;
+    }
+
+    public List<List<String>> getResultSetAsList(int offset, int pageSize) throws SQLException {
+
+        String preparedSql = sql + " limit " + offset + ", " + pageSize;
+
+        PreparedStatement preparedStatement = connection.prepareStatement( preparedSql );
+
+        ResultSet rs = preparedStatement.executeQuery();
+
+        List<List<String>> result = new ArrayList<>();
+
+
+        
+        while (rs.next()) {
+
+            List<String> row = new ArrayList<>();
+
+            for (int i = 1; i <= columnCount; i++) {
+                row.add( rs.getString( i ));
+            }
+
+            result.add( row );
+        }
+
+
+        return result;
     }
 
     private String whitelist(String tableName) {
@@ -42,7 +87,7 @@ public class Repository {
     }
 
 
-    private void init(Properties props) throws IOException, SQLException {
+    private void init(Properties props) throws SQLException {
 
         dataSource = new MysqlDataSource();
 
@@ -57,12 +102,16 @@ public class Repository {
         connection.setReadOnly( true );
 
         String tableName = props.getProperty( "tablename" );
+        String orderBy = props.getProperty( "orderBy" );
 
         log.info("Using table name {}", tableName);
+        log.info("Using order by {}", orderBy);
 
-        sanitisedTableName = whitelist(tableName);
+        this.tableName = whitelist(tableName);
 
-        log.info("Sanitised table name {}", sanitisedTableName);
+        this.sql =  "select * from " + tableName + " order by " + orderBy;
+
+        log.info("Sanitised table name {}", this.tableName);
     }
 
     public void close() throws SQLException {

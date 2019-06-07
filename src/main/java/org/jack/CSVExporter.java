@@ -5,87 +5,96 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 
 import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.util.List;
 import java.util.Properties;
 
 @Slf4j
 public class CSVExporter implements AutoCloseable {
 
-    private Repository repository;
-
-    private Properties props;
+    private final Repository repository;
 
     private BufferedWriter writer;
 
     private CSVPrinter csvPrinter;
 
-    public CSVExporter() throws IOException, SQLException {
+    private final String filepath;
+
+    private int fileCount = 0;
+
+    private final int noOfRowsInEachOutputFile;
+
+    private final int noOfRowsInEachDatabaseFetch;
+
+    private final int pageSize;
+
+
+    public CSVExporter(Properties properties, Repository repository) throws Exception {
+
+        this.repository = repository;
 
         log.info("**** Booting com.example.CSVExporter, loading property file and db repository.....");
 
-        loadProperties();
+        filepath = properties.getProperty("filepath");
 
-        repository = new Repository( props );
+        noOfRowsInEachOutputFile = Integer.valueOf( properties.getProperty("noOfRowsInEachOutputFile") );
 
-        String filepath = props.getProperty("filepath");
+        noOfRowsInEachDatabaseFetch =  Integer.valueOf( properties.getProperty("noOfRowsInEachDatabaseFetch") );
 
-        log.info("Opening file {} for writing.....", filepath);
+        pageSize = noOfRowsInEachOutputFile < noOfRowsInEachDatabaseFetch ? noOfRowsInEachOutputFile : noOfRowsInEachDatabaseFetch;
 
-        writer = Files.newBufferedWriter(Paths.get( filepath ));
+        bootNewPrintWriter();
 
         log.info("**** CSVExporter successfully booted!!");
     }
 
-    private void loadProperties() throws IOException {
-        props = new Properties();
+    public void exportCSV() throws Exception {
 
-        InputStream inputStream = getClass().getResourceAsStream("/db.properties");
+        int currentFileCount = 0, offset = 0;
 
-        props.load( inputStream );
-    }
+        List<List<String>> result = repository.getResultSetAsList(offset, pageSize);
 
-    public void exportCSV() throws IOException, SQLException {
+        while(result.size() > 0) {
 
-        int offset = 0;
+            csvPrinter.printRecords( result );
 
-        int pageSize = 10;
+            offset += result.size();
 
-        ResultSet rs = null;
+            currentFileCount += result.size();
 
-        while(true) {
-            rs = repository.getResultSet(offset, pageSize);
+            if(currentFileCount > noOfRowsInEachOutputFile) {
 
-            if (offset != 0 && offset % 1000 == 0) {
-                log.debug("No of rows processed {}", offset);
+                csvPrinter.close( true );
+
+                writer.close();
+
+                bootNewPrintWriter();
+
+                currentFileCount = 0;
             }
 
-            if (rs.isBeforeFirst()) {
-                print(rs);
-            } else break;
+            result = repository.getResultSetAsList(offset, pageSize);
 
-            offset += pageSize;
+            log.info("No of rows processed {}", offset);
         }
 
-        rs.close();
         log.info("Finished writing csv");
     }
 
+    private void bootNewPrintWriter() throws Exception {
 
-    private void print(ResultSet rs) throws IOException, SQLException {
+        String filename = filepath + fileCount + ".csv";
 
-        if(csvPrinter == null) {
-            log.info("Building CSVPrinter with headers");
-            csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(rs));
-        }
+        log.info("Opening file {} for writing.....", filename);
 
-        csvPrinter.printRecords( rs );
+        writer = Files.newBufferedWriter(Paths.get( filename ));
+
+        fileCount++;
+
+        csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader( repository.getHeaders() ));
     }
+
 
 
     @Override
