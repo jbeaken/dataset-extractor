@@ -1,5 +1,0 @@
-url=jdbc:mysql://localhost/blah
-user=blah
-password=blah
-tablename=blah
-filepath=blah/output.csv
