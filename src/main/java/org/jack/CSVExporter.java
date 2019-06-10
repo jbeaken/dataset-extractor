@@ -53,7 +53,7 @@ public class CSVExporter implements AutoCloseable {
 
         int currentFileCount = 0, offset = 0;
 
-        List<List<String>> result = repository.getResultSetAsList(offset, pageSize);
+        List<List<String>> result = repository.getRows(offset, pageSize);
 
         while(result.size() > 0) {
 
@@ -74,7 +74,7 @@ public class CSVExporter implements AutoCloseable {
                 currentFileCount = 0;
             }
 
-            result = repository.getResultSetAsList(offset, pageSize);
+            result = repository.getRows(offset, pageSize);
 
             log.info("No of rows processed {}", offset);
         }

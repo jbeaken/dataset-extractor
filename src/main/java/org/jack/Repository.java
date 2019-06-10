@@ -55,7 +55,7 @@ public class Repository {
         headers = labels;
     }
 
-    public List<List<String>> getResultSetAsList(int offset, int pageSize) throws SQLException {
+    public List<List<String>> getRows(int offset, int pageSize) throws SQLException {
 
         String preparedSql = sql + " limit " + offset + ", " + pageSize;
 
