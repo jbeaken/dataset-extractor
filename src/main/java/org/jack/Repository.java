@@ -12,9 +12,9 @@ import java.util.Properties;
 public class Repository {
 
     private MysqlDataSource dataSource;
-    
+
     private Connection connection;
-    
+
     private String tableName;
 
     private String[] headers;
@@ -51,7 +51,7 @@ public class Repository {
                 labels[i] = metaData.getColumnLabel(i + 1);
             }
         }
-        
+
         headers = labels;
     }
 
@@ -66,7 +66,7 @@ public class Repository {
         List<List<String>> result = new ArrayList<>();
 
 
-        
+
         while (rs.next()) {
 
             List<String> row = new ArrayList<>();
