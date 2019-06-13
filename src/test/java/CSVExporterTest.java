@@ -1,31 +1,27 @@
-import org.jack.CSVExporter;
-import org.jack.Extractor;
-import org.jack.Repository;
+import org.endeavourhealth.datasetextractor.CSVExporter;
+import org.endeavourhealth.datasetextractor.Extractor;
+import org.endeavourhealth.datasetextractor.Repository;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class CSVExporterTest {
 
-    private Repository repository;
-    private Properties properties;
+    private CSVExporter csvExporter;
 
 
     @Before
-    public void init() throws SQLException, IOException {
+    public void init() throws Exception {
 
-        repository = mock(Repository.class);
+        Repository repository = mock(Repository.class);
 
-        properties = loadProperties();
+        Properties properties = loadProperties();
 
         int noOfRowsInEachOutputFile = Integer.valueOf( properties.getProperty("noOfRowsInEachOutputFile") );
 
@@ -49,15 +45,21 @@ public class CSVExporterTest {
         when( repository.getRows(0, pageSize) ).thenReturn(result);
 
         when( repository.getHeaders() ).thenReturn( headers );
+
+        csvExporter = new CSVExporter(properties, repository);
     }
 
 
     @Test
     public void getRecords() throws Exception {
 
-        CSVExporter csvExporter = new CSVExporter( properties, repository );
-
         csvExporter.exportCSV();
+    }
+
+    @After
+    public void after() throws Exception {
+
+        csvExporter.close();
     }
 
     private static Properties loadProperties() throws IOException {
