@@ -1,6 +1,7 @@
-package org.jack;
+package org.endeavourhealth.datasetextractor;
 
 import lombok.extern.slf4j.Slf4j;
+import org.endeavourhealth.datasetextractor.exception.DatasetExtractorException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,7 +13,7 @@ public class Extractor {
 
     public static void main(String... args) throws IOException, SQLException {
 
-        Properties properties = loadProperties();
+        Properties properties = loadProperties( args );
 
         Repository repository = new Repository( properties );
 
@@ -27,18 +28,23 @@ public class Extractor {
         } catch (Exception e) {
             log.error("Exception during export", e);
         }
-
     }
 
-    private static Properties loadProperties() throws IOException {
+    private static Properties loadProperties(String[] args) throws IOException {
+
+        if(args.length == 0) throw new DatasetExtractorException("Required args is absent [tablename]");
+
         Properties properties = new Properties();
 
         InputStream inputStream = Extractor.class.getClassLoader().getResourceAsStream("data.extractor.properties");
 
         properties.load( inputStream );
 
+        properties.put("tablename", args[0]);
+
+        if(args.length > 1) properties.put("orderBy", args[1]);
+
         return properties;
     }
-
 
 }

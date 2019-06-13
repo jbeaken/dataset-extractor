@@ -83,7 +83,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>org.jack.Extractor</mainClass>
+                    <mainClass>org.endeavourhealth.datasetextractor.Extractor</mainClass>
                     <cleanupDaemonThreads>false</cleanupDaemonThreads>
                 </configuration>
             </plugin>
